@@ -127,11 +127,11 @@ void main(void)
     /* UART1 configuration ------------------------------------------------------*/
     UART1_Config();
 
-    while(1){
-        delay(1000);
-        RX_count=0;
-        cmd_send(IDX_AT);
-    }
+//    while(1){
+//        delay(1000);
+//        RX_count=0;
+//        cmd_send(IDX_AT);
+//    }
     while (1)
     {
         // delay(10000);
