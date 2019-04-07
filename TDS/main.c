@@ -39,7 +39,7 @@
 #define LED_GPIO_PORT  (GPIOC)              //port use to turn on/off module SIM
 #define LED_GPIO_PINS  (GPIO_PIN_3)         //pin use to turn on/off module SIM
 #define TIM4_PERIOD       124               //1ms
-#define UART_BUFFER 128                     //255 charactor for UART buffer
+#define UART_BUFFER 255                     //255 charactor for UART buffer
 #define TDS_LIMIT 500                       //watermark value for TDS
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
@@ -232,11 +232,11 @@ static void update_phonebook(void){
                 }
                 //else we just ignore this message, the phonebook is full
             }
-            // //this is a trash message, remove it
-            // else{
-            //     AT_DELE_SMS[LEN_DELE_SMS-1]=sms_wrk+0x30;//convert to char, sms idx start from 1
-            //     cmd_send(CMD_DELE_MODE);
-            // }
+            //this is a trash message, remove it
+            else{
+                AT_DELE_SMS[LEN_DELE_SMS-1]=sms_wrk+0x30;//convert to char, sms idx start from 1
+                cmd_send(CMD_DELE_MODE);
+            }
         }
     }
 }
