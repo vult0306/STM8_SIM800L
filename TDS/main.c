@@ -36,50 +36,60 @@
 #define PUTCHAR_PROTOTYPE int putchar (int c)
 #define GETCHAR_PROTOTYPE int getchar (void)
 /* Private define ------------------------------------------------------------*/
-#define LED_GPIO_PORT  (GPIOC)
-#define LED_GPIO_PINS  (GPIO_PIN_3)
-#define TIM4_PERIOD       124
-#define UART_BUFFER 512
-#define TDS_LIMIT 500
+#define LED_GPIO_PORT  (GPIOC)              //port use to turn on/off module SIM
+#define LED_GPIO_PINS  (GPIO_PIN_3)         //pin use to turn on/off module SIM
+#define TIM4_PERIOD       124               //1ms
+#define UART_BUFFER 128                     //255 charactor for UART buffer
+#define TDS_LIMIT 500                       //watermark value for TDS
 /* Private macro -------------------------------------------------------------*/
-#define convert10to8(x) (uint8_t)(x >> 2)
 /* Private variables ---------------------------------------------------------*/
-#define VREF 3.0      // analog reference voltage(Volt) of the ADC
-#define SCOUNT  30           // sum of sample point
+#define VREF 3.0                            // analog reference voltage(Volt) of the ADC
+#define SCOUNT  30                          // sum of sample point
 
-#define IDX_AT 0
-#define IDX_TEXT_MODE 1
-#define IDX_READ_SMS 2
-#define IDX_SEND_SMS 3
-#define IDX_MAX 4
+// #define CMD_AT 0                            //AT command to check status of module SIM
+#define CMD_TEXT_MODE 1                     //set text mode to module SIM
+#define CMD_READ_SMS 2                      //read SMS command index
+#define CMD_SEND_SMS 3                      //send SMS command index
+#define CMD_DELE_MODE 4                      //delete SMS command index
 
-#define LEN_AT 2
-#define LEN_TEXT_MODE 9
-#define LEN_READ_SMS 9
-#define LEN_SEND_SMS 43
-#define LEN_SDT_CMD 20
+// #define LEN_AT 2                            //AT command lenght
+#define LEN_TEXT_MODE 9                     //length of text mode command
+#define LEN_READ_SMS 9                      //length of read sms command
+#define LEN_SEND_SMS 64                     //length of maximum sms command
+#define LEN_DELE_SMS 9                      //length of delete sms command
+#define LEN_SDT_CMD 22                      //lenght of string contain phone number
+#define LEN_RESPOND_OK 6                    //lenght of respond from module SIM
 
-#define LEN_FB_AT 2
-#define LEN_FB_TEXT_MODE 2
-#define LEN_FB_READ_SMS 2
-#define LEN_FB_SEND_SMS 2
+#define MAX_CONTACT 10                      //Maximmum contact stored
+#define MAX_SMS MAX_CONTACT                 //Maximum sms stored
+#define LEN_ACTIVATE_CODE 5                 //length of activate code
+#define TDS_MEASURE_REPEAT 10               //repeat measuring TDS n times to make sure the water is really dirty
 
-#define MAX_SMS 15
-#define CR 0x0d
-#define LF 0x0a
-#define LEN_ACTIVATE_CODE 5
-
+#define MAX_WARNING 2                       //number of warning code
+#define TDS_OVER_RANGE 0                    //tds over safe range
+#define TDS_UNDER_RANGE 1                   //tds probe is probably not plugged into water
+//SDT[LEN_SDT_CMD]="AT+CMGS=\"+xxxxxxxxxxx\"";
+struct PHONEBOOK {
+  char SDT[LEN_SDT_CMD];                 //contact number including send sms command
+  bool sms_sent;                       //indicate if message is already sent to this contact
+  bool empty;                               //this is an empty contact
+};
 __IO uint32_t TimingDelay = 0;
-char AT[LEN_AT]="AT";
-char AT_TEXT_MODE[LEN_TEXT_MODE]="AT+CMGF=1";
-char AT_READ_SMS[LEN_READ_SMS]="AT+CMGR=4";
-char AT_SDT[LEN_SDT_CMD]="AT+CMGS=+xxxxxxxxxxx";
-char activated_code[LEN_ACTIVATE_CODE]="water";
-char AT_SEND_SMS[LEN_SEND_SMS]="Nuoc khong du an toan de uong, thay loi loc";
-char UART_RX[UART_BUFFER];
-bool sms_nsent=TRUE;
-bool activated=FALSE;
-uint8_t RX_count=0,i=0;
+static char respond_ok[LEN_RESPOND_OK]={'\n','\r','K','O','\n','\r'};   //respond from module SIM, expected to be "OK"
+// volatile char AT[LEN_AT]="AT";                                                   //AT command to check status of module SIM
+volatile char AT_TEXT_MODE[LEN_TEXT_MODE]="AT+CMGF=1";                           //set text mode to module SIM
+volatile char AT_READ_SMS[LEN_READ_SMS]="AT+CMGR=x";                             //read sms command, x = sms index
+volatile char AT_DELE_SMS[LEN_DELE_SMS]="AT+CMGD=x";                             //delete sms command, x = sms index
+static char activated_code[LEN_ACTIVATE_CODE]="water";                         //activate code
+static char AT_SEND_SMS[MAX_WARNING][LEN_SEND_SMS]={"Quy khach vui long thay loi loc", //warning message to send to customer
+                                                    "Dau do khong tiep xuc voi nuoc"}; //warning message to send to customer
+char UART_RX[UART_BUFFER];                                              //UART received buffer
+volatile uint8_t  RX_count=0, // UART received buffer count
+                  wrn_idx=0,        //warning index
+                  tds_over_range=0, //count the time tds value get over the limitation
+                  tds_under_range=0, //tds value = 0 means the tds probe is not plugged into water
+                  sms_wrk=0;    // current working message
+struct PHONEBOOK contact[MAX_CONTACT];
 uint16_t Conversion_Value;
 int analogBuffer[SCOUNT];    // store the analog value in the array, read from ADC
 int analogBufferTemp[SCOUNT];
@@ -91,18 +101,21 @@ float compensationVolatge;
 /* Private function prototypes -----------------------------------------------*/
 void delay(__IO uint32_t nTime);
 void TimingDelay_Decrement(void);
-static void CLK_Config(void);
-static void UART1_Config(void);
-static void TIM4_Config(void);
-static void GPIO_Config(void);
-static void ADC_Config(void);
-static void sendsms(void);
-static int getMedianNum(int*);
-static void readTDS(void);
-static void cmd_send(uint8_t);
-static void eol (void);
-static void get_phone_num(void);
-static bool get_customer_info(void);
+static void CLK_Config(void);                     //config cpu clock
+static void UART1_Config(void);                   //config uC with SIM communication
+static void TIM4_Config(void);                    //config timer
+static void GPIO_Config(void);                    //config GPIO
+static void ADC_Config(void);                     //config ADC to measure TDS
+static int getMedianNum(int*);                    //median value of TDS
+static void readTDS(void);                        //read TDS value from TDS sensor
+static void cmd_send(uint8_t);                    //send command to module SIM
+static void eol(void);                            //send break charactor <LF>
+static bool check_respond(void);                  //check respond from module SIM after each command
+static bool strcmp(char*,char*,uint8_t);          //compare two string/array
+static void strcpy(char*,char*,uint8_t);          //copy string 2 to string 1
+static void update_phonebook(void);               //add/remove contact
+static void inform_customer(void);                //inform customer if TDS value over range or tds probe is not plugged into water
+struct PHONEBOOK get_phone_num(void);
 /* Private functions ---------------------------------------------------------*/
 /* Public functions ----------------------------------------------------------*/
 /**
@@ -112,97 +125,244 @@ static bool get_customer_info(void);
   */
 void main(void)
 {
-    /* Clock configuration -----------------------------------------*/
-    CLK_Config();  
+    uint8_t i;
+    //booting system
+    CLK_Config();   /* Clock configuration  */
+    GPIO_Config();  /* GPIO configuration   */
+    ADC_Config();   /* ADC configuration    */
+    TIM4_Config();  /* TIM4 configuration   */
+    UART1_Config(); /* UART1 configuration  */
 
-    /* GPIO configuration -----------------------------------------*/
-    GPIO_Config();  
-
-    /* ADC configuration -------------------------------------------*/
-    ADC_Config();
-
-    /* TIM4 configuration -----------------------------------------*/
-    TIM4_Config();
-
-    /* UART1 configuration ------------------------------------------------------*/
-    UART1_Config();
-
-//    while(1){
-//        delay(1000);
-//        RX_count=0;
-//        cmd_send(IDX_AT);
-//    }
+    for(i=0;i<MAX_CONTACT;i++){
+        strcpy(contact[i].SDT,"AT+CMGS=\"+xxxxxxxxxxx\"",LEN_SDT_CMD);
+        contact[i].sms_sent=FALSE;
+        contact[i].empty=TRUE;
+    }
+    cmd_send(CMD_TEXT_MODE);
+    delay(2000);
     while (1)
     {
-        // delay(10000);
-        // readTDS();
-        // delay(10000);
-        // if tds value exceed the limitation and havent inform customer yet
-        // if((tdsValue>TDS_LIMIT) && !warned){
-            cmd_send(IDX_TEXT_MODE);
-            delay(2000);
-            for(i=0;i<MAX_SMS;i++){
-                RX_count=0;
-                AT_READ_SMS[LEN_READ_SMS-1]=i+0x30+1;//convert to char, sms idx start from 1
-                cmd_send(IDX_READ_SMS);
-                if(RX_count>0x0F){//message existed
-                    if( get_customer_info() ){
-                        cmd_send(IDX_SEND_SMS);
-                    }
-                }
-                delay(1000);
-            }
+        // Read SMS every 10s to update phonebook
+        delay(1000);
+        update_phonebook();
+        // Measure TDS value every 1s
+        // if (TDS value > limit) or (TDS probe is not put into water)
+        // send wanning message to all contact in phonebook
+        // tds_over_range=0;
+        // tds_under_range=0;
+        // for(i=0;i<TDS_MEASURE_REPEAT;i++){
+        //     delay(1000);
+        //     readTDS();
+        //     if(tdsValue>TDS_LIMIT){
+        //         tds_over_range++;
+        //     }
+        //     else if(tdsValue == 0){
+        //         tds_under_range++;
+        //     }
         // }
+        // if((tds_over_range == TDS_MEASURE_REPEAT) || (tds_under_range==TDS_MEASURE_REPEAT))
+        //     inform_customer();
     }
 }
-static bool get_customer_info(void){
-    uint8_t i,j;
-    bool temp=TRUE;
-    get_phone_num();
-    for(i=RX_count;i>0;i--)
-        if(UART_RX[i]=='"')
-            break;
-    for(j=0;j<LEN_ACTIVATE_CODE;j++)
-        if(activated_code[j]!=UART_RX[i+j+3])
-            temp=FALSE;
-    return temp;
+
+/*-----------------------------------------------------------------*/
+/*
+ * this function send out warning message to customer if the probe
+ * is not plugged into water or the TDS value is bigger the limittation
+ */
+static void inform_customer(void){
+  uint8_t i;
+    for(i=0;i<MAX_CONTACT;i++){
+        sms_wrk = i+1;
+        //not send sms to this contact yet, so send
+        if((!contact[i].empty)&&(!contact[i].sms_sent)){
+            if(tds_over_range){
+                wrn_idx=TDS_OVER_RANGE;
+            }
+            else if(tds_under_range){
+                wrn_idx=TDS_UNDER_RANGE;
+            }
+            cmd_send(CMD_SEND_SMS);
+        }
+    }
 }
-static void get_phone_num(void){
+
+/*-----------------------------------------------------------------*/
+/*
+ * this function loop through all sms in memory. 
+ * If message contain valid activate code:
+ *    - If this contact is already in the phonebook -> reset this
+ *      contact sending flag. It means we have not sent the warning
+ *      message to this contact yet.
+ *    - If this is a new contact -> updated to phonebook
+ * If message does not contain activate code -> remove this message
+ */
+static void update_phonebook(void){
+    struct PHONEBOOK temp_contact={"AT+CMGS=\"+xxxxxxxxxxx\"",FALSE,TRUE};//no phonenumber, not sent message yet, not in phonebook
+    uint8_t i,j,k;
+    //go through all sms(read/unread) in sim
+    for(i=0;i<MAX_SMS;i++){
+        sms_wrk = i+1;
+        //AT_READ_SMS[LEN_READ_SMS]="AT+CMGR=x";
+        AT_READ_SMS[LEN_READ_SMS-1]=sms_wrk+0x30;//convert to char, sms idx start from 1
+        cmd_send(CMD_READ_SMS);
+        //check if message contain activate code
+        if(RX_count >= 0x0F){//this message in not empty
+            //find sms data position
+            for(j=RX_count;j>0;j--)
+                if(UART_RX[j]=='"')
+                    break;
+            //compare with activate code
+            for(k=0;k<LEN_ACTIVATE_CODE;k++)
+                if(activated_code[k]!=UART_RX[j+k+3])
+                    break;
+            //this message contain valid code
+            if(k==LEN_ACTIVATE_CODE){
+                //check if this contact is already in the PHONEBOOK
+                temp_contact=get_phone_num();
+                //compare with each contact in PHONEBOOK
+                for(j=0;j<MAX_CONTACT;j++)
+                    if((!strcmp(temp_contact.SDT,contact[j].SDT,LEN_SDT_CMD)) || (contact[j].empty))
+                        break;
+                //There is space in PHONEBOOK, insert this contact
+                if(j!=MAX_CONTACT){
+                    temp_contact.empty=FALSE;
+                    temp_contact.sms_sent=FALSE;
+                    contact[j]=temp_contact;
+                }
+                //else we just ignore this message, the phonebook is full
+            }
+            // //this is a trash message, remove it
+            // else{
+            //     AT_DELE_SMS[LEN_DELE_SMS-1]=sms_wrk+0x30;//convert to char, sms idx start from 1
+            //     cmd_send(CMD_DELE_MODE);
+            // }
+        }
+    }
+}
+
+
+/*-----------------------------------------------------------------*/
+/* compare two string/array
+ * s1: address of string/array 1
+ * s2: address of string/array 2
+ * len: number of character
+ */
+bool strcmp(char*s1,char*s2,uint8_t len){
+    bool flag = TRUE;
+    while(len>0){
+        len-=1;
+        if( *(s1+len) != *(s2+len) ){
+            flag = FALSE;
+            break;
+        }
+    }
+    return flag;
+}
+
+/*-----------------------------------------------------------------*/
+/* copy two string/array
+ * s1: address of destination string/array
+ * s2: address of source string/array
+ * len: number of character
+ */
+static void strcpy(char*s1,char*s2,uint8_t len){
+  while(len>0){
+    *(s1+len-1) = *(s2+len-1);
+    len-=1;
+  }
+}
+
+/*-----------------------------------------------------------------*/
+/* check OK respond from module sim
+ * <CR><LF>OK<CR><LF>
+ */
+static bool check_respond(void){
+  uint8_t i;
+  for(i=UART_BUFFER-1;i>0;i--)
+    if(UART_RX[i]=='\n'){
+      if(!strcmp(&UART_RX[i],respond_ok,LEN_RESPOND_OK))
+        return TRUE;
+      else
+        return FALSE;
+    }
+  if(i==0)
+    return FALSE;
+}
+
+/*-----------------------------------------------------------------*/
+/* extract phone number from a sms message
+ */
+struct PHONEBOOK get_phone_num(void){
     uint8_t i,j;
+    struct PHONEBOOK temp={"AT+CMGS=\"+xxxxxxxxxxx\"",FALSE,TRUE};
+    //get phone number
     for(i=0;i<RX_count;i++)
         if(UART_RX[i]==',')
             break;
-    for(j=0;j<LEN_SDT_CMD;j++)
-        AT_SDT[8+j]=UART_RX[i+j+2];
+    for(j=0;j<LEN_SDT_CMD-9;j++)
+        temp.SDT[9+j]=UART_RX[i+j+2];
+    return temp;
 }
 
+/*-----------------------------------------------------------------*/
+/* check OK respond from module sim
+ * <CR><LF>OK<CR><LF>
+ */
 static void cmd_send(uint8_t cmd_idx){
     int i;
+    for(RX_count=UART_BUFFER-1;RX_count>0;RX_count--)
+        UART_RX[RX_count]=0;
     switch (cmd_idx){
-        case IDX_AT:
-            for(i=0;i<LEN_AT;i++)
-                putchar(*(AT+i));
-            eol();
-        break;
-        case IDX_TEXT_MODE:
+        // case CMD_AT:
+        //     for(i=0;i<LEN_AT;i++)
+        //         putchar(*(AT+i));
+        //     eol();
+        // break;
+
+        case CMD_TEXT_MODE:
             for(i=0;i<LEN_TEXT_MODE;i++)
                 putchar(*(AT_TEXT_MODE+i));
             eol();
         break;
-        case IDX_READ_SMS:
+
+        case CMD_READ_SMS:
             for(i=0;i<LEN_READ_SMS;i++)
                 putchar(*(AT_READ_SMS+i));
             eol();
         break;
-        case IDX_SEND_SMS:
+
+        case CMD_DELE_MODE:
+            for(i=0;i<LEN_DELE_SMS;i++)
+                putchar(*(AT_DELE_SMS+i));
+            eol();
+            delay(3000);
+        break;
+
+        case CMD_SEND_SMS:
+            //send phone number first
             for(i=0;i<LEN_SDT_CMD;i++)
-                putchar(*(AT_SDT+i));
+            putchar(*(contact[sms_wrk-1].SDT+i));
             eol();
             delay(100);
+            //send message content
             for(i=0;i<LEN_SEND_SMS;i++)
-                putchar(*(AT_SEND_SMS+i));
-            eol();
+                putchar(*(AT_SEND_SMS[wrn_idx]+i));
+                putchar(26);//send break symbol(26=CTR-Z)
         break;
+    }
+    delay(2000);
+    //check respond, expected to be "OK"
+    if(check_respond()==TRUE){
+      switch (cmd_idx)
+      {
+        case CMD_SEND_SMS:
+          contact[sms_wrk-1].sms_sent = TRUE;
+          break;
+
+        default:
+          break;
+      }
     }
 }
 /**
@@ -239,7 +399,7 @@ static void UART1_Config(void)
   // UART1_Init((uint32_t)9600, UART1_WORDLENGTH_8D, UART1_STOPBITS_1, UART1_PARITY_NO, 
               // (UART1_SyncMode_TypeDef)(UART1_SYNCMODE_CLOCK_ENABLE | UART1_SYNCMODE_CPOL_LOW |UART1_SYNCMODE_CPHA_MIDDLE |UART1_SYNCMODE_LASTBIT_ENABLE),
               // UART1_MODE_TXRX_ENABLE);
-  UART1_Init((uint32_t)38400, UART1_WORDLENGTH_8D, UART1_STOPBITS_1, UART1_PARITY_NO,
+  UART1_Init((uint32_t)9600, UART1_WORDLENGTH_8D, UART1_STOPBITS_1, UART1_PARITY_NO,
               UART1_SYNCMODE_CLOCK_DISABLE, UART1_MODE_TXRX_ENABLE);
 
   UART1_ITConfig(UART1_IT_RXNE_OR, ENABLE);
@@ -380,11 +540,11 @@ PUTCHAR_PROTOTYPE
 static void eol (void)
 {
   /* Write a character to the UART1 */
-  UART1_SendData8(CR);//\cr
-  /* Loop until the end of transmission */
-  while (UART1_GetFlagStatus(UART1_FLAG_TXE) == RESET);
+  // UART1_SendData8(CR);//\cr
+  // /* Loop until the end of transmission */
+  // while (UART1_GetFlagStatus(UART1_FLAG_TXE) == RESET);
   /* Write a character to the UART1 */
-  UART1_SendData8(LF);//\lf
+  UART1_SendData8('\n');//\lf
   /* Loop until the end of transmission */
   while (UART1_GetFlagStatus(UART1_FLAG_TXE) == RESET);
   return;
@@ -401,17 +561,10 @@ GETCHAR_PROTOTYPE
 #else
   int c = 0;
 #endif
-    int i=0;
   /* Loop until the Read data register flag is SET */
   // while (UART1_GetFlagStatus(UART1_FLAG_RXNE) == RESET);
     c = UART1_ReceiveData8();
   return (c);
-}
-void sendsms(){
-    cmd_send(IDX_TEXT_MODE);
-    delay(100);
-    cmd_send(IDX_SEND_SMS);
-    delay(100);
 }
 
 void readTDS(void){

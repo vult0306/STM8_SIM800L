@@ -257,8 +257,8 @@
         </option>
         <option>
           <name>CCIncludePath2</name>
-          <state>D:\Google Drive\gitwork\STM8\TDS\STM8S_StdPeriph_Driver\inc</state>
-          <state>D:\Google Drive\gitwork\STM8\TDS\src</state>
+          <state>D:\Google Drive\gitwork\STM8_SIM800L\TDS\STM8S_StdPeriph_Driver\inc</state>
+          <state>D:\Google Drive\gitwork\STM8_SIM800L\TDS\src</state>
         </option>
         <option>
           <name>CCStdIncCheck</name>
@@ -1051,8 +1051,8 @@
         </option>
         <option>
           <name>CCIncludePath2</name>
-          <state>D:\gitwork\STM8\TDS\src</state>
-          <state>D:\gitwork\STM8\TDS\STM8S_StdPeriph_Driver\inc</state>
+          <state>D:\Google Drive\gitwork\STM8_SIM800L\TDS\src</state>
+          <state>D:\Google Drive\gitwork\STM8_SIM800L\TDS\STM8S_StdPeriph_Driver\inc</state>
         </option>
         <option>
           <name>CCStdIncCheck</name>
@@ -1185,7 +1185,8 @@
         </option>
         <option>
           <name>AsmIncludePath</name>
-          <state></state>
+          <state>D:\Google Drive\gitwork\STM8_SIM800L\TDS\STM8S_StdPeriph_Driver\inc</state>
+          <state>D:\Google Drive\gitwork\STM8_SIM800L\TDS\src</state>
         </option>
         <option>
           <name>AsmDefines</name>
@@ -1342,7 +1343,7 @@
         </option>
         <option>
           <name>IlinkDebugInfoEnable</name>
-          <state>1</state>
+          <state>0</state>
         </option>
         <option>
           <name>IlinkKeepSymbols</name>
@@ -1601,9 +1602,6 @@
         <name>$PROJ_DIR$\STM8S_StdPeriph_Driver\inc\stm8s_adc1.h</name>
       </file>
       <file>
-        <name>$PROJ_DIR$\STM8S_StdPeriph_Driver\inc\stm8s_awu.h</name>
-      </file>
-      <file>
         <name>$PROJ_DIR$\STM8S_StdPeriph_Driver\inc\stm8s_clk.h</name>
       </file>
       <file>
@@ -1626,9 +1624,6 @@
       <name>src</name>
       <file>
         <name>$PROJ_DIR$\STM8S_StdPeriph_Driver\src\stm8s_adc1.c</name>
-      </file>
-      <file>
-        <name>$PROJ_DIR$\STM8S_StdPeriph_Driver\src\stm8s_awu.c</name>
       </file>
       <file>
         <name>$PROJ_DIR$\STM8S_StdPeriph_Driver\src\stm8s_clk.c</name>

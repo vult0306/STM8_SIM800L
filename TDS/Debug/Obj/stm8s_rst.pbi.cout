@@ -1,18 +1,18 @@
-"D:\Google Drive\gitwork\STM8\TDS\STM8S_StdPeriph_Driver\src\stm8s_rst.c"
+"D:\Google Drive\gitwork\STM8_SIM800L\TDS\STM8S_StdPeriph_Driver\src\stm8s_rst.c"
 -std=c99
 -ferror-limit=100
 -I
-D:\Google Drive\gitwork\STM8\TDS\STM8S_StdPeriph_Driver\inc
+D:\Google Drive\gitwork\STM8_SIM800L\TDS\STM8S_StdPeriph_Driver\inc
 -I
-D:\Google Drive\gitwork\STM8\TDS\src
+D:\Google Drive\gitwork\STM8_SIM800L\TDS\src
 -I
 C:\Program Files (x86)\IAR Systems\Embedded Workbench 7.3\stm8\inc
 -I
 C:\Program Files (x86)\IAR Systems\Embedded Workbench 7.3\stm8\inc\c
 -I
-D:\Google Drive\gitwork\STM8\TDS\STM8S_StdPeriph_Driver\inc
+D:\Google Drive\gitwork\STM8_SIM800L\TDS\STM8S_StdPeriph_Driver\inc
 -I
-D:\Google Drive\gitwork\STM8\TDS\src
+D:\Google Drive\gitwork\STM8_SIM800L\TDS\src
 -D__CHAR_BITS__=8
 -D__CHAR_MAX__=0xff
 -D__CHAR_MIN__=0
