@@ -364,102 +364,51 @@ INTERRUPT_HANDLER(I2C_IRQHandler, 19)
   */
 }
 
-#if defined(STM8S105) || defined(STM8S005) ||  defined (STM8AF626x)
-/**
-  * @brief  UART2 TX interrupt routine.
-  * @param  None
-  * @retval None
-  */
- INTERRUPT_HANDLER(UART2_TX_IRQHandler, 20)
-{
-    /* In order to detect unexpected events during development,
-       it is recommended to set a breakpoint on the following instruction.
-    */
-  }
 
-/**
-  * @brief  UART2 RX interrupt routine.
-  * @param  None
-  * @retval None
-  */
- INTERRUPT_HANDLER(UART2_RX_IRQHandler, 21)
-{
-    /* In order to detect unexpected events during development,
-       it is recommended to set a breakpoint on the following instruction.
-    */
-  }
-#endif /* STM8S105*/
-
-#if defined(STM8S207) || defined(STM8S007) || defined(STM8S208) || defined (STM8AF52Ax) || defined (STM8AF62Ax)
-/**
-  * @brief  UART3 TX interrupt routine.
-  * @param  None
-  * @retval None
-  */
- INTERRUPT_HANDLER(UART3_TX_IRQHandler, 20)
-{
-    /* In order to detect unexpected events during development,
-       it is recommended to set a breakpoint on the following instruction.
-    */
-  }
-
-/**
-  * @brief  UART3 RX interrupt routine.
-  * @param  None
-  * @retval None
-  */
- INTERRUPT_HANDLER(UART3_RX_IRQHandler, 21)
-{
-    /* In order to detect unexpected events during development,
-       it is recommended to set a breakpoint on the following instruction.
-    */
-  }
-#endif /*STM8S208 or STM8S207 or STM8AF52Ax or STM8AF62Ax */
-
-#if defined(STM8S207) || defined(STM8S007) || defined(STM8S208) || defined (STM8AF52Ax) || defined (STM8AF62Ax)
-/**
-  * @brief  ADC2 interrupt routine.
-  * @param  None
-  * @retval None
-  */
- INTERRUPT_HANDLER(ADC2_IRQHandler, 22)
-{
-    /* In order to detect unexpected events during development,
-       it is recommended to set a breakpoint on the following instruction.
-    */
+// #if defined(STM8S207) || defined(STM8S007) || defined(STM8S208) || defined (STM8AF52Ax) || defined (STM8AF62Ax)
+// /**
+//   * @brief  ADC2 interrupt routine.
+//   * @param  None
+//   * @retval None
+//   */
+//  INTERRUPT_HANDLER(ADC2_IRQHandler, 22)
+// {
+//     /* In order to detect unexpected events during development,
+//        it is recommended to set a breakpoint on the following instruction.
+//     */
     
-    /* Get converted value */
-    Conversion_Value = ADC2_GetConversionValue();
+//     /* Get converted value */
+//     Conversion_Value = ADC2_GetConversionValue();
 
-    if (Conversion_Value == 0x0)
-    {
-        /* Turn off LED1..4*/
-     }
-    else if ((Conversion_Value <= 0xFF) && (Conversion_Value > 0x0))
-    {
-        /* Turn on LED1 */
+//     if (Conversion_Value == 0x0)
+//     {
+//         /* Turn off LED1..4*/
+//      }
+//     else if ((Conversion_Value <= 0xFF) && (Conversion_Value > 0x0))
+//     {
+//         /* Turn on LED1 */
         
-        /* Turn off LED2..4 */
-    }
-    else if ((Conversion_Value >= 0x100) && (Conversion_Value <= 0x1FF))
-    {
-        /* Turn on LED1 and LED2 */
+//         /* Turn off LED2..4 */
+//     }
+//     else if ((Conversion_Value >= 0x100) && (Conversion_Value <= 0x1FF))
+//     {
+//         /* Turn on LED1 and LED2 */
         
-        /* Turn off LED3 and LED4 */
-    }
-    else if ((Conversion_Value >= 0x200) && (Conversion_Value <= 0x2FF))
-    {
-        /* Turn on LED1..3 */
+//         /* Turn off LED3 and LED4 */
+//     }
+//     else if ((Conversion_Value >= 0x200) && (Conversion_Value <= 0x2FF))
+//     {
+//         /* Turn on LED1..3 */
         
-        /* Turn off LED4 */
-    }
-    else
-    {
-        /* Turn on LED1..4*/
-    }
-    ADC2_ClearITPendingBit();
-}
-#else /*STM8S105, STM8S103 or STM8S903 or STM8AF626x */
+//         /* Turn off LED4 */
+//     }
+//     else
+//     {
+//         /* Turn on LED1..4*/
+//     }
+//     ADC2_ClearITPendingBit();
+// }
+// #else /*STM8S105, STM8S103 or STM8S903 or STM8AF626x */
 /**
   * @brief  ADC1 interrupt routine.
   * @param  None
@@ -483,7 +432,7 @@ INTERRUPT_HANDLER(I2C_IRQHandler, 19)
     return;
 
 }
-#endif /*STM8S208 or STM8S207 or STM8AF52Ax or STM8AF62Ax */
+// #endif /*STM8S208 or STM8S207 or STM8AF52Ax or STM8AF62Ax */
 
 #ifdef STM8S903
 /**
