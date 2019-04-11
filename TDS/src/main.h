@@ -1,6 +1,6 @@
 #ifndef __MAIN_H
 #define __MAIN_H
-
+#include "stm8s.h"
 /* Private typedef -----------------------------------------------------------*/
 #define PUTCHAR_PROTOTYPE int putchar (int c)
 #define GETCHAR_PROTOTYPE int getchar (void)
@@ -23,7 +23,6 @@
 
 #define LEN_TEXT_MODE 9                     //length of text mode command
 #define LEN_READ_SMS 9                      //length of read sms command
-
 #define LEN_DELE_SMS 9                      //length of delete sms command
 #define LEN_SDT_CMD 22                      //length of string contain phone number
 #define LEN_RESPOND_OK 6                    //length of respond from module SIM
@@ -41,7 +40,7 @@
 #define LEN_SEND_TDS_OVF 80                 //length of maximum sms command
 #define LEN_SEND_TDS_UDF 80                 //length of maximum sms command
 #define LEN_SEND_ACTIVAT 80                 //length of maximum sms command
-
+#define LEN_ACTIVATE_CODE 5
 //SDT[LEN_SDT_CMD]="AT+CMGS=\"+xxxxxxxxxxx\"";
 struct PHONEBOOK {
   char SDT[LEN_SDT_CMD];                //contact number including send sms command
@@ -60,8 +59,6 @@ static char AT_SEND_SMS_TDS_OVF[LEN_SEND_TDS_OVF]="Loi loc nuoc het han, vui lon
 static char AT_SEND_SMS_TDS_UDF[LEN_SEND_TDS_UDF]="Dau do khong tiep xuc voi nuoc, vui long kiem tra dau do"; //warning message to send to customer
 static char AT_SEND_SMS_ACTIVAT[LEN_SEND_ACTIVAT]="DANG KY THANH CONG"}; //sucessfully activated contact
 
-void delay(__IO uint32_t nTime);
-void TimingDelay_Decrement(void);
 static void CLK_Config(void);                     //config cpu clock
 static void UART1_Config(void);                   //config uC with SIM communication
 static void TIM4_Config(void);                    //config timer

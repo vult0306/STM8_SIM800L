@@ -26,7 +26,7 @@
   */ 
 
 /* Includes ------------------------------------------------------------------*/
-#include "stm8s.h"
+// #include "stm8s.h"
 #include "main.h"
 
 __IO uint32_t TimingDelay = 0;

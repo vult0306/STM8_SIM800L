@@ -1960,9 +1960,6 @@
         <name>$PROJ_DIR$\STM8S_StdPeriph_Driver\inc\stm8s_gpio.h</name>
       </file>
       <file>
-        <name>$PROJ_DIR$\STM8S_StdPeriph_Driver\inc\stm8s_rst.h</name>
-      </file>
-      <file>
         <name>$PROJ_DIR$\STM8S_StdPeriph_Driver\inc\stm8s_tim4.h</name>
       </file>
       <file>
@@ -1982,9 +1979,6 @@
       </file>
       <file>
         <name>$PROJ_DIR$\STM8S_StdPeriph_Driver\src\stm8s_gpio.c</name>
-      </file>
-      <file>
-        <name>$PROJ_DIR$\STM8S_StdPeriph_Driver\src\stm8s_rst.c</name>
       </file>
       <file>
         <name>$PROJ_DIR$\STM8S_StdPeriph_Driver\src\stm8s_tim4.c</name>
